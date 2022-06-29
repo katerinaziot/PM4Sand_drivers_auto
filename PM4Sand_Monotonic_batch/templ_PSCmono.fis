@@ -1,0 +1,23 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+;                           PM4Sand - Monotonic PSC testing                                              ; 
+;                      Option for drained / undrained conditions                                         ;
+;--------------------------------------------------------------------------------------------------------;
+;   - Five elements at 5 different confinements (0.25, 1, 4, 16, 64 atm) subjected to                    ;
+;     to monotonic strain-controlled plane strain compression shearing                                   ;
+;   - Can be used to obtain G/Gmax & Damping curves at various confinements                              ;
+;   - Exports 5 txt files containing time histories for each element                                     ;
+;   - Exports 1 tst file summarizing peak stress ratio and mobilized friction angle for each element     ;
+;--------------------------------------------------------------------------------------------------------;
+;   - User must input 3 parameters (hpo, Dr, Go) at a minimum plus atmospheric pressure                  ;
+;   - Units currently used in this example are Pascals and kilograms; user must be careful to use        ;
+;     consistent units                                                                                   ;
+;--------------------------------------------------------------------------------------------------------;
+;                             Ross W. Boulanger     - Oct  2009                                          ;  
+;                             Katerina Ziotopoulou  - June  2022                                         ; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 
+;------------MODEL OPTIONS-------------------------------------------------------------------------------;
+new
+config  cppudm  gw dyn 
+set     flow off
+set     message off
