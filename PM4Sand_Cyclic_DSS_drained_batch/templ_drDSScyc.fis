@@ -1,0 +1,25 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+;                           PM4Sand - Drained Cyclic DSS testing                                         ;  
+;                     1)    Modulus reduction and damping evaluation                                     ;
+;                    2) option for checking volumetric strains for repeating uniform loading             ;
+;--------------------------------------------------------------------------------------------------------;
+;   - Five elements at 5 different confinements (0.25, 1, 4, 16, 64 atm) subjected to                    ;
+;     cyclic strain-controlled shearing                                                                  ;
+;   - Each element driven strain-controlled for N cycles at each strain                                  ;
+;   - Can be used to obtain G/Gmax & Damping curves at various confinements                              ;
+;   - Exports 5 txt files containing time histories for each element                                     ;
+;   - Exports 1 txt file containing shear modulus and damping values for each cycle of loading           ;
+;--------------------------------------------------------------------------------------------------------;
+;   - User must input 3 parameters (hpo, Dr, Go) at a minimum plus atmospheric pressure                  ;
+;   - Units currently used in this example are Pascals and kilograms; user must be careful to use        ;
+;     consistent units                                                                                   ;
+;--------------------------------------------------------------------------------------------------------;
+;                             Ross W. Boulanger     - Oct  2009                                          ;  
+;                             Katerina Ziotopoulou  - June  2022                                         ; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 
+;------------MODEL OPTIONS-------------------------------------------------------------------------------;
+new
+config  cppudm  gw dyn 
+set     flow off
+set     message off
