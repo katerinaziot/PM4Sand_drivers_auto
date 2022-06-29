@@ -1,0 +1,613 @@
+def $input_variables
+	  $Pa           = 101300.0                       ; Atmospheric pressure (Pa)
+    ;____________________________________________________________________________________________________;
+    ;               Obtaining Dr: Dr can be estimated by an SPT blowcount or specified directly          ;
+    ;____________________________________________________________________________________________________;
+   ;$N160   = 14.0
+	  $Cd     = 46.0                         ; [Idriss & Boulanger, 2003b]
+   ;$Dr     = sqrt($N160/$Cd)              ; Relative density in decimal
+    $N160   = min(46,max(2,46*$Dr^2))      ; Calibration to Idriss-Boulanger 2008 
+    ;____________________________________________________________________________________________________;
+    ;   Assigning hpo : this parameter is varied by user until the desired cyclic strength is obtained   ;
+    ;____________________________________________________________________________________________________;
+    ; Here assigned given that model has been calibrated
+    if $Dr  = 0.35 
+       $hpo = 0.52
+    endif 
+    if $Dr  = 0.55 
+       $hpo = 0.40 
+    endif 
+    if $Dr  = 0.75 
+       $hpo = 0.62 
+    endif
+	  ;____________________________________________________________________________________________________;
+    ;	Sand properties: Secondary parameters (set to 0.0 if you want defaults)
+    ;____________________________________________________________________________________________________;
+	  $ho     =  0.0     ; Defaults to value calculated as a function of Dr
+	  $emin   =  0.0     ; Defaults to 0.5
+	  $emax   =  0.0     ; Defaults to 0.8
+    $nb     =  0.0     ; Defaults to 0.5
+    $nd     =  0.0     ; Defaults to 0.1
+    $Ado    =  0.0     ; Defaults to value calculated to honor Bolton's relationship
+    $zmax   =  0.0     ; Defaults to value calculated as a function of the rel. state parameter
+    $cz     =  0.0     ; Defaults to 250
+    $ce     =  0.0     ; Defaults to value calculated as a function of Dr
+    $phicv  =  0.0     ; Defaults to 33 degrees
+    $pois   =  0.0     ; Defaults to 0.3
+    $Gdegr  =  0.0     ; Defaults to 2.0
+	  $CDR    =  0.0     ; Defaults to value calculated as a function of Dr
+	  $Ckaf   =  0.0     ; Defaults to value calculated as a function of Dr
+	  $Q      =  0.0     ; Defaults to 10.0
+	  $R      =  0.0     ; Defaults to 1.5
+	  $m      =  0.0     ; Defaults to 0.01
+	  $Fsed   =  0.0     ; Defaults to 0.04
+	  $psedo  =  0.0     ; Defaults to -Patm/5
+	  ;____________________________________________________________________________________________________;
+	  ;         						    Water Properties                   	        				     ;
+	  ;____________________________________________________________________________________________________;
+	  $Kwater       = 2.0e9                          ; Water bulk modulus (Pa)
+	  $waterDens    = 1000.0                         ; Density of water (kg/m^3) 
+	  ;____________________________________________________________________________________________________;
+	  ;                     Specifying density, void ratio and porosity                                    ;
+	  ;____________________________________________________________________________________________________;
+	  $Gs      = 2.67 						       ; Specific gravity
+	  if $emin = 0.0
+	     $emin = 0.5
+	  endif
+	  if $emax = 0.0
+	     $emax = 0.8
+	  endif
+	
+	  $void    = $emax - $Dr*($emax - $emin)
+    $por     = $void/(1.0+$void)              ; Porosity
+    $rho_d   = $Gs * $waterDens /(1.0+$void)  ; Dry density
+    $rho_s   = $rho_d *(1.0+$void/$Gs)        ; Saturated density
+    
+    ;____________________________________________________________________________________________________;
+    ;                Obtaining Go: Go can be estimated from Vs1 and Ko or specified directly             ;
+    ;____________________________________________________________________________________________________;
+	  $Vs1          = 85*($N160+2.5)^0.25                    ; Fit to Andrus-Stokoe (2000) data (m/sec)
+	  ;$Vs1         = 170.0                                  ; Shear wave velocity (m/sec) - Uncomment this to specify Vs1 directly
+	  ;$Ko          = 0.5 				                   ; Lateral earth pressure coefficient at rest
+    $Go = ($rho_s * $Vs1^2 / $Pa) / ((1.0+$Ko)/2.0)^0.5    ; UCD/CGM-12/01 Report Equations 78 & 79 
+    ; Activate following line if you wish to activate non-default Go value
+    ;$Go = 100.0
+    ;____________________________________________________________________________________________________;
+	  ;                                      Driver Parameters                                             ;
+    ;____________________________________________________________________________________________________;
+   ;$confinement  = 1.0                        ; Confinement in atmospheres (vertical effective stress)
+   ;$static_bias  = 0.0				           ; Initial static shear stress bias (alpha)
+    
+    ; CSR for 3rd element - Herein computed from I&B 2008 (Eqn 70) and set as the CRR
+    $CSRmid       = exp(($N160/14.1) + ($N160/126)^2 - ($N160/23.6)^3 + ($N160/25.4)^4 - 2.8)  
+	  $dydt         = 0.0                        ; Option for manual dydt input, if zero gets default value
+end
+$input_variables
+
+;========================================================================================================;
+;                                    END OF INPUTS NEEDED BY THE USER                                    ;
+;========================================================================================================;
+; This function creates the name of the savefile, converts the confinement to the units of the problem   ;
+; defines the CSRs for all 5 elements (based on the CSR specified for the mid element) & sets few more   ;
+; parameters for the driver            																	 ;
+;--------------------------------------------------------------------------------------------------------;
+def $calc_variables
+	$savefile      = $basefile + '.sav' 
+	$sigvo         = -$Pa * $confinement                       ; Convert confinement to units of problem
+  
+  ;*****************************************************************************************************
+	array $CSR_limit(5)				    ; Create 5x1 array containing the various CSRs for the 5 elements
+    $CSR_limit(1) = $CSRmid / 1.6 
+    $CSR_limit(2) = $CSRmid / 1.3 
+    $CSR_limit(3) = $CSRmid
+    $CSR_limit(4) = $CSRmid * 1.3 
+    $CSR_limit(5) = $CSRmid * 1.6 
+
+    $his_steps    = 50          	     ; Number of solutions steps to every store history value 
+    $freq         = 1.0                  ; Frequency for Rayleigh damping
+	  $damp         = 0.01                 ; Damping for Rayleigh damping
+    $maxCycles    = 150                  ; Cut-off of cyclic loading based on number of cycles 
+    $maxStrain    = 0.075                ; Cut-off of cyclic loading based on maximum SA strain
+end 
+$calc_variables 
+
+;------------GRID GENERATION-----------------------------------------------------------------------------;
+def $mesh 
+    $width  = 1.0                        ; Width of element in model units of length
+    $thick  = 1.0                        ; Thickness of element in model units of length
+    $xmax   = 9*$width
+    $rate   = 0.01 * $thick * 4.0        ; strain rate = Dgamma/sec
+end 
+$mesh 
+grid 9,1 
+gen (0.0,0.0) (0.0,$thick) ($xmax,$thick) ($xmax,0.0) ratio 1.0,1.0 i=1,10 j=1,2 
+
+;--------------------------- MATERIAL PROPERTIES---------------------------------------------------------;
+;                            Assign PM4Sand model                                                        ;
+;--------------------------------------------------------------------------------------------------------;
+group '$sand' region 1,1
+model dll pm4sand group '$sand'
+
+def $asssign_primary
+    loop $i (1, izones)
+        loop $j (1, jzones)
+            ; Assign the primary parameters - the secondary ones will get default values	
+            command
+            prop  dens=$rho_d  poros=$por  &
+   			      D_r =$Dr    G_o=$Go  h_po=$hpo P_atm = $Pa i=$i j=$j	  
+            endcommand
+        endloop
+    endloop
+end
+$asssign_primary
+
+def $asssign_secondary ; Assign the secondary parameters - separated just for illustration purposes
+    loop $i (1, izones)
+        loop $j (1, jzones)
+            command
+            prop  h_o    = $ho     e_min = $emin   e_max    = $emax     &
+				          n_b    = $nb     n_d   = $nd     A_do     = $Ado      &
+				          z_max  = $zmax   c_e   = $ce     c_z      = $cz       &
+				          phi_cv = $phicv  pois  = $pois   G_degr   = $Gdegr    &
+				          C_DR   = $CDR    C_kaf = $Ckaf   Q_bolt   = $Q        &
+				          R_bolt = $R      m_par = $m      F_sedmin = $Fsed     & 
+				          p_sedo = $psedo  i=$i j=$j	  
+            endcommand
+        endloop
+    endloop
+end
+$asssign_secondary
+ 
+; Input water properties -- Zero for drained (consolidation)
+water  bulk=0.0  dens=$waterDens tens=1.0e10
+ 
+; Null out zones between each soil zone so that the 5 elements are created
+model null i 2  
+model null i 4  
+model null i 6  
+model null i 8 
+
+;----------------------- INITIAL CONDITIONS -------------------------------------------------------------;
+;                          K0 Compression                                                                ;
+;--------------------------------------------------------------------------------------------------------;
+fix  x y j 1       ; Fixed Base
+fix  x   j 2
+ 
+def $initial       ; Application of initial conditions
+    $v_force   = $sigvo * $width/2.0 
+    $sigho     = $Ko * $sigvo 
+    command 
+    	apply   yforce  $v_force  i = 1, 2   j=2 
+    	apply   yforce  $v_force  i = 3, 4   j=2 
+    	apply   yforce  $v_force  i = 5, 6   j=2 
+    	apply   yforce  $v_force  i = 7, 8   j=2 
+    	apply   yforce  $v_force  i = 9,10   j=2 
+  
+   		initial pp   0.0    			     j=1 
+    	initial pp   0.0    			     j=2 
+    	initial syy  $sigvo 		   	     j=1 
+    	initial sxx  $sigho 			     j=1 
+    endcommand 
+end 
+$initial 
+;--------------------------------------------------------------------------------------------------------;
+;                          Confirm equilibrium and get ready for static bias                             ;
+;								Optional: re-set the initial back-stress								 ;
+;--------------------------------------------------------------------------------------------------------;
+set dyn off 
+solve 
+;
+; Optional: In boundary value problems, the user may choose to re-set the initial back-stress ratio at
+; 	        the end of consolidation. It is not necessary here, but is executed to illustrate its use.
+prop First_Call=0.0
+
+;---------------------------------- CHANGE BOUNDARY CONDITIONS ------------------------------------------;
+;            Attached right and left vertical slides so that stress state on right equals left           ;
+;--------------------------------------------------------------------------------------------------------;
+def $attach 
+  $a = 1 
+  $b = 2 
+  loop $n (1,5) 
+    command 
+      attach aside from $a,2 to $a,1 bside from $b,2 to $b,1 
+    endcommand 
+    $a = $a + 2 
+    $b = $b + 2 
+  endloop 
+end 
+$attach 
+
+;*******************************************************************************************************;
+;                                         STATIC BIAS                                                   ;
+;*******************************************************************************************************;
+set      dyn on 
+set      dytime = 0.0
+initial  xdisp  = 0.0  ydisp = 0.0 
+initial  xvel   = $rate  j=2  
+set      dy_damping rayleigh = $damp  $freq 
+def $manual_dt
+    if $dydt # 0.0
+       command
+	      set dydt $dydt
+	   endcommand
+    endif 
+end
+$manual_dt
+
+;--------------------------------------------------------------------------------------------------------;
+;                                   At static bias, velocity is stopped                                  ;
+;--------------------------------------------------------------------------------------------------------;
+def $shearbias 
+    while_stepping
+    $tbias = 1                           ; 1 sec
+    loop $n (1,5) 
+         $SR = -sxy(2*$n-1,1)/$sigvo 
+         if $SR >= $static_bias          ; Stop 
+            xvel(2*$n-1,2)= 0.0 
+            xvel(2*$n,2)  = 0.0 
+         endif
+    endloop 
+end 
+$shearbias 
+solve dytime $tbias 
+ 
+set fishcall 0 remove $shearbias 
+
+def $stepCount 
+    $Nsteps_static = step
+end
+$stepCount 
+ 
+;*******************************************************************************************************;
+;                                      Prepare for dynamic analysis                                     ;
+;*******************************************************************************************************;
+set      dyn on 
+set      dytime = 0.0 
+initial  xdisp  = 0.0 ydisp = 0.0
+initial  xvel   = $rate  j=2  
+set      dy_damping rayleigh=$damp $freq
+ 
+;-------------------------------------------------------------------------------------------------------;
+;                                          Input water properties                                       ;
+;-------------------------------------------------------------------------------------------------------;
+; This function scans through the model obtaining the maximum bulk modulus and calculates the bulk      ;
+; modulus that will be assigned to water. Using a large multiple of maxK ensures that the true Kwater   ;
+; is used.  This routine can be used to test if other multiples of maxK will affect calibration         ;
+;-------------------------------------------------------------------------------------------------------;
+def $update_bulk 
+    $maxK = 0.0 
+    loop $i (1, izones)
+        loop $j (1, jzones) 	
+             $dummy = z_prop($i,$j,'bulkK')  
+             $maxK  = max($dummy,$maxK)
+		endloop
+    endloop 
+    $waterBulk  = min($Kwater,20000.0*$maxK)
+	command 
+         water bulk=$waterBulk  dens=$waterDens  tens=1.0e10
+    endcommand
+end 
+$update_bulk
+
+def $stepCount 
+    $Nsteps_static = step
+end
+$stepCount
+
+;-------------------------------------- CSR CONTROL ----------------------------------------------------; 
+;                    At specific stress ratio, sign of velocity is changed                              ;
+;-------------------------------------------------------------------------------------------------------;
+def $CSR_control 
+  array $Liq_1(5) $Liq_2(5) $Liq_3(5) $Cyc_Num(5) $exy(5) $emax(5) $SRlast(5) 
+  array $ru(5)    $rumax(5)
+  
+  while_stepping 
+  $Ko_1 = (sxx(1,1)+pp(1,1))/(syy(1,1)+pp(1,1))
+  
+  loop $n (1,5) 
+    $ru($n)    = 1-(syy(2*$n-1,1)+pp(2*$n-1,1))/$sigvo      ; excess pore water pressure ratio
+    $rumax($n) = max($ru($n),$rumax($n))                    ; track of maximum excess pore water pressure ratio
+    $exy($n)   = xdisp(2*$n,2)/$thick                       ; shear strain
+    $emax($n)  = max($emax($n),abs($exy($n)))               ; track of maximum shear strain
+    $SR        = -sxy(2*$n-1,1)/$sigvo                      ; stress ratio
+    
+    if $SR > $CSR_limit($n) + $static_bias    ; Change velocity sign and impose 1/2 cycle increment
+      if $SRlast($n) < 0.95 * $SR   
+         xvel(2*$n-1,2) = -xvel(2*$n-1,2)/abs(xvel(2*$n-1,2))
+         xvel(2*$n-1,2) =  xvel(2*$n-1,2)*$rate*min(2,max(1.0,$emax($n)/0.01)) 
+         xvel(2*$n,2)   = -xvel(2*$n,2)/abs(xvel(2*$n,2))
+         xvel(2*$n,2)   =  xvel(2*$n,2)*$rate*min(2,max(1.0,$emax($n)/0.01)) 
+         
+		     $Cyc_Num($n)   = $Cyc_Num($n) + 0.5   ;Number of Cycles counter
+         $SRlast($n)    = $SR
+      endif
+    endif
+    
+    if $SR < -$CSR_limit($n) + $static_bias  ; Change velocity sign and impose 1/2 cycle increment
+      if $SRlast($n)> $SR + 0.01
+         xvel(2*$n-1,2) = -xvel(2*$n-1,2)/abs(xvel(2*$n-1,2))
+         xvel(2*$n-1,2) =  xvel(2*$n-1,2)*$rate*min(2,max(1.0,$emax($n)/0.01))
+         xvel(2*$n,2)   = -xvel(2*$n,2)/abs(xvel(2*$n,2))
+         xvel(2*$n,2)   =  xvel(2*$n,2)*$rate*min(2,max(1.0,$emax($n)/0.01))
+		 
+         $Cyc_Num($n)   = $Cyc_Num($n)+0.5     ;Number of Cycles counter
+         $SRlast($n)    = $SR
+      endif
+    endif
+    
+    ;------------------------------------------------------------------------------------
+    ; Counting of Cycles for various triggering criteria
+    ;------------------------------------------------------------------------------------
+
+    if $rumax($n) < 0.98               ; Pore pressure criteria 
+       $Liq_1($n) = $Cyc_Num($n)+0.5   ; Failure occurs 0.5 cycle after last entry to 
+       								   ; this statement 
+    endif 
+    if $emax($n) < 0.01                ; 1% shear strain 
+       $Liq_2($n) = $Cyc_Num($n)+0.5 
+    endif 
+    if $emax($n) < 0.03                ; 3% shear strain 
+       $Liq_3($n) = $Cyc_Num($n)+0.5 
+    endif 
+    if $emax($n) > $maxStrain          ; Max shear strain: if reached STOP!
+       xvel(2*$n-1,2) = 0.0 
+       xvel(2*$n,2)   = 0.0 
+    endif 
+  endloop 
+end 
+$CSR_control 
+ 
+;*******************************************************************************************************;
+;                                             HISTORIES                                                 ;
+;*******************************************************************************************************;
+def $array_to_scalar 
+  while_stepping 
+  ; Obtain separate histories from arrays
+  ; Shear strain 
+  $exy_1     = $exy(1) 
+  $exy_2     = $exy(2) 
+  $exy_3     = $exy(3) 
+  $exy_4     = $exy(4) 
+  $exy_5     = $exy(5) 
+  
+  ; Number of total cycles 
+  $Cyc_Num_1 = $Cyc_Num(1) 
+  $Cyc_Num_2 = $Cyc_Num(2) 
+  $Cyc_Num_3 = $Cyc_Num(3) 
+  $Cyc_Num_4 = $Cyc_Num(4) 
+  $Cyc_Num_5 = $Cyc_Num(5) 
+  
+  ; Porewater pressure ratio 
+  $ru_1      = $ru(1) 
+  $ru_2      = $ru(2) 
+  $ru_3      = $ru(3) 
+  $ru_4      = $ru(4) 
+  $ru_5      = $ru(5) 
+end 
+
+def $histories 
+  loop $n (1,5) 
+    $i = 2*$n-1 
+    command 
+      his esyy i $i, j 1 
+      his sxy  i $i, j 1 
+    endcommand 
+  endloop 
+  command  
+    his $exy_1 
+    his $exy_2 
+    his $exy_3 
+    his $exy_4 
+    his $exy_5 
+    his $Cyc_Num_1 
+    his $Cyc_Num_2 
+    his $Cyc_Num_3 
+    his $Cyc_Num_4 
+    his $Cyc_Num_5 
+    his $ru_1 
+    his $ru_2 
+    his $ru_3 
+    his $ru_4 
+    his $ru_5 
+  endcommand 
+end 
+$histories
+ 
+his  esxx i=1 j=1 
+his  esxx i=3 j=1 
+his  esxx i=5 j=1 
+his  esxx i=7 j=1 
+his  esxx i=9 j=1 
+ 
+his  unbalance 
+
+;*******************************************************************************************************;
+;                                          CREATE TABLES                                                ;
+;*******************************************************************************************************;
+def $his_terms 
+    whilestepping 
+    if step = $j * $his_steps + $Nsteps_static 
+       $j     = $j + 1
+       $tab1  = 1 
+       $tab2  = 2 
+       $tab3  = 3 
+       loop $n (1,5)
+            $k     = 2*$n-1
+            $sxy   = -sxy($k,1)/$sigvo 
+            $esyy  = (syy($k,1) + pp($k,1))/$sigvo
+		 
+            xtable($tab1,$j)  = $Cyc_Num($n)     ; Number of Cycles
+            ytable($tab1,$j)  = $sxy             ; Shear Stress over vertical initial eff. stress           
+            xtable($tab2,$j)  = $exy($n)*100.0   ; Shear Strain in %
+            ytable($tab2,$j)  = $esyy            ; Vertical  Stress over vertical initial eff. stress
+            xtable($tab3,$j)  = 1.0-$esyy        ; ru
+            ytable($tab3,$j)  = dytime
+		 
+            $tab1  = $tab1 + 3 
+            $tab2  = $tab2 + 3 
+            $tab3  = $tab3 + 3 
+       endloop 
+    endif 
+end 
+$his_terms 
+ 
+;========================================================================================================;
+;                              SOLVE: Step for "$Num_steps" steps                                        ;
+;========================================================================================================;
+set steps 50000000 
+def $solve 
+    loop $nt (1,1000) 
+         $time =dytime + 0.1 
+         $biggestStrain  = min($emax(1),$emax(2)) 
+         $biggestStrain  = min($biggestStrain,$emax(3)) 
+         $biggestStrain  = min($biggestStrain,$emax(4)) 
+         $biggestStrain  = min($biggestStrain,$emax(5)) 
+         if $biggestStrain < $maxStrain 
+            if $Cyc_Num(1) < $maxCycles 
+               command 
+                  solve dytime $time 
+               endcommand 
+            endif 
+         endif 
+    endloop 
+end 
+$solve 
+ 
+;========================================================================================================;
+;                                    OUTPUT DATA from TABLES                                             ;
+;--------------------------------------------------------------------------------------------------------;
+;   This function will export one .txt file that will contain the number of cycles it takes for each     ;
+;   element to reach each of the triggering criteria (98% ru,1% strain, 3% strain)                       ;
+;========================================================================================================;
+def $CSR_N 
+    array $data(1,1) 
+    $file      = $basefile + '_csrN.txt'  
+    status     = open($file,1,1) 
+    $data(1,1) = 'CSR  N_to_98%_ru  N_to_1%_strain  N_to_3%_strain' 
+    if status  = 0 
+       status  = write($data,1) 
+    endif   
+    loop $n (1,5) 
+         xtable(20,$n)  =  $Liq_1($n)
+         ytable(20,$n)  =  $CSR_limit($n)   
+         xtable(21,$n)  =  $Liq_2($n)
+         ytable(21,$n)  =  $CSR_limit($n)
+         xtable(22,$n)  =  $Liq_3($n)
+         ytable(22,$n)  =  $CSR_limit($n)
+                
+         $data(1,1)     =               string($CSR_limit($n))  + '  '
+         $data(1,1)     =  $data(1,1) + string($Liq_1($n))      + '  '
+         $data(1,1)     =  $data(1,1) + string($Liq_2($n))      + '  '
+         $data(1,1)     =  $data(1,1) + string($Liq_3($n))
+         
+         if status = 0 
+            status = write($data,1) 
+         endif 
+  endloop 
+  status = close 
+end 
+$CSR_N 
+;-------------------------------------------------------------------------------------------------------;
+;         This function interpolates between half-cycle counts to get a continuous cycle count          ;
+;-------------------------------------------------------------------------------------------------------;
+def $N_gama
+loop $k (1,5) 
+	$tab1 = 3*$k-2 
+	$tab2 = $k + 29			;temporary tables 
+	$tab3 = $k + 39			;temporary tables 
+	$size = table_size($tab1) 
+	loop $i (1,$size) 
+		$numcyc          = xtable($tab1,$i) 
+		xtable($tab2,$i) = $i 
+		ytable($tab2,$i) = $numcyc 
+		$halfcyc         = max($numcyc*2,$halfcyc) 
+	endloop 
+	$N0=0 
+	loop $j (1,$halfcyc) 
+		loop $i (1,$size) 
+			$N=ytable($tab2,$i) 
+			if $N < $N0+0.5 
+				$laststep          = $i 
+				xtable($tab3,1)    = 0 
+				ytable($tab3,1)    = 0 
+				xtable($tab3,$j+1) = $laststep+1 
+				ytable($tab3,$j+1) = $N0+0.5 
+			endif 
+		if $laststep<$size 
+			xtable($tab3,$j+2) = $size 
+			ytable($tab3,$j+2) = $N0+0.5 
+		endif 
+		endloop 
+	$N0 = $N0+0.5 
+	endloop 
+	$halfcyc = 0 
+	$size2   = table_size($tab3)-1 
+	$ncycf   = 0 
+		loop $i (1,$size) 
+			loop $j (1,$size2) 
+			$x0 = xtable($tab3,$j) 
+			$x1 = xtable($tab3,$j+1) 
+			$dn = 0.5/($x1-$x0+0.01) 
+				if $j = $size2 
+					$x0_p = xtable($tab3,$j-1) 
+					$x1_p = $x0 
+					$dn   = 0.5/($x1_p-$x0_p+0.01) 
+				endif 
+				if $x0<$i 
+					if $i<$x1 
+						$ncycf = $ncycf + $dn 
+					endif 
+				endif 
+			endloop 
+			xtable($tab1,$i)=$ncycf	 ;stores continuous ncyc instead of the incremental one 
+		endloop 
+endloop 
+end 
+$N_gama
+ 
+;-------------------------------------------------------------------------------------------------------;
+; This function will export 5 .txt files in the folder of the project that will contain information for ;
+; each one of the 5 elements in 5 columns: number of cycles, CSR, shear strain (%), sigv/sigvo and ru   ;
+;-------------------------------------------------------------------------------------------------------;
+def $five_files 
+  $size = table_size(1) 
+  loop $n (1,5) 
+        $file  = $basefile + '_' + string($n) + '.txt' 
+        status = open($file,1,1) 
+        $tab1  = 3*$n-2 
+        $tab2  = 3*$n-1 
+        $tab3  = 3*$n 
+        $data(1,1) = 'Ncyc CSR shear_strain sigv/sigvo ru' 
+        if status = 0 
+            status = write($data,1) 
+        endif 
+        loop $i (1,$size) 
+            $data(1,1) =              string(xtable($tab1,$i))  +'  ' 
+            $data(1,1) = $data(1,1) + string(ytable($tab1,$i))  +'  ' 
+            $data(1,1) = $data(1,1) + string(xtable($tab2,$i))  +'  ' 
+            $data(1,1) = $data(1,1) + string(ytable($tab2,$i))  +'  ' 
+            $data(1,1) = $data(1,1) + string(xtable($tab3,$i))  +'  ' 
+            if status = 0 
+               status = write($data,1) 
+            endif 
+        endloop 
+        status = close 
+  endloop 
+end 
+$five_files 
+;-------------------------------------------------------------------------------------------------------;
+; This function will create tables so as to be able to plot CSR vs. Ncyc curves in FLAC's GIIC          ;
+;-------------------------------------------------------------------------------------------------------;
+def $CSR_N_plot 
+  loop $n (1,5) 
+	 $tab = 60+$n 
+     xtable($tab,1)   = $Liq_1($n) 
+     ytable($tab,1)   = $CSR_limit($n)        
+     xtable($tab,2)   = $Liq_2($n) 
+     ytable($tab,2)   = $CSR_limit($n)
+     xtable($tab,3)   = $Liq_3($n) 
+     ytable($tab,3)   = $CSR_limit($n)
+  endloop
+end
+$CSR_N_plot
+;========================================================================================================;

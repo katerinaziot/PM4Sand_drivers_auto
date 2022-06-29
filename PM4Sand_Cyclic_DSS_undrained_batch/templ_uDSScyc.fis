@@ -1,0 +1,24 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+;                           PM4Sand - Undrained Cyclic DSS testing                                       ;  
+;          Five elements subjected to uniform stress cyclic loading at 5 different uniform CSRs          ;
+;--------------------------------------------------------------------------------------------------------;
+;   - Strain controlled loading imposed by applying a strain rate                                        ;
+;   - Stress controlled reversal criteria                                                                ;
+;   - CSR of 3rd element specified by the user and the CSRs of the other 4 are respectively scaled       ;
+;   - Can be used to obtain CSR vs Ncyc curves for various conditions                                    ;
+;   - Exports 6 txt files: 5 containing time histories for each element & 1 summarizing the number of    ;
+;     cycles it took to reach 3 different failure criteria for each element: 98% excess pore water pres- ;
+;     sure ratio, 1% shear strain, 3% shear strain                                                       ;
+;   - User must input 3 parameters (hpo, Dr, Go) at a minimum plus atmospheric pressure.                 ;
+;   - Units currently used in this example are Pascals and kilograms; user must be careful to use        ;
+;     consistent units                                                                                   ;
+;--------------------------------------------------------------------------------------------------------;
+;                             Ross W. Boulanger     - Oct  2009                                          ;  
+;                             Katerina Ziotopoulou  - June  2022                                         ; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 
+;------------MODEL OPTIONS-------------------------------------------------------------------------------;
+new
+config  cppudm  gw dyn 
+set     flow off
+set     message off
