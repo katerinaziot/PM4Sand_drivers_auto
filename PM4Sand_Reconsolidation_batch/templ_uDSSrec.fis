@@ -1,0 +1,25 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
+;                           PM4Sand - Post-cyclic reconsolidation in DSS                                 ;  
+;     Five elements at one confinement subjected to uniform cyclic loading to different maximum strains  ;
+;      and then reconsolidated to the initial vertical effective stress                                  ;
+;--------------------------------------------------------------------------------------------------------;
+;   - Exports 5 txt files containing time histories for each element                                     ;
+;   - Exports 1 txt file summarizing the cyclic stress ratio & number of cycles to failure               ;
+;   - Exports 1 txt file summarizing the reconsolidation strains for given peak shear strains            ;
+;--------------------------------------------------------------------------------------------------------;
+;   - Strain controlled loading imposed by applying a strain rate                                        ;
+;   - Stress controlled reversal criteria                                                                ;
+;   - All elements cyclically sheared at their CRRs (I&B2008)                                            ;
+;   - User must input 3 parameters (hpo, Dr, Go) at a minimum plus atmospheric pressure.                 ;
+;   - Units currently used in this example are Pascals and kilograms; user must be careful to use        ;
+;     consistent units                                                                                   ;
+;--------------------------------------------------------------------------------------------------------;
+;                             Ross W. Boulanger     - Oct  2009                                          ;  
+;                             Katerina Ziotopoulou  - June  2022                                         ; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 
+;------------MODEL OPTIONS-------------------------------------------------------------------------------;
+new
+config  cppudm  gw dyn 
+set     flow off
+set     message off
