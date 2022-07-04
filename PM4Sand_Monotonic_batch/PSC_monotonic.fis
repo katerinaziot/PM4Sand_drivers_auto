@@ -411,13 +411,16 @@ def $strain_control
              $t2  = $t0 + 0.75/$freq 
              $t3  = $t0 + 1.00/$freq 
              command 
-              initial yvel $vel j=2 
+              ; First run enough steps to get the zero point
+              step 10 ; Should be at least twice $his_steps which was defined earlier
+    
+              ini   yvel $vel j=2 
               solve dytime $t1 
-              initial yvel $negvel j=2 
+              ini   yvel $negvel j=2 
               solve dytime $t2 
-              initial yvel $vel j=2 
+              ini   yvel $vel j=2 
               solve dytime $t3 
-             end_command 
+             endcommand 
            endloop 
         else 
            $vel = -$Strain_limit($limits)*$thick * $freq2 * 4.0 
@@ -433,13 +436,16 @@ def $strain_control
                 $t3=$t1 
              endif 
              command 
-              initial yvel $vel j=2 
+              ; First run enough steps to get the zero point
+              step 10 ; Should be at least twice $his_steps which was defined earlier
+              
+              ini   yvel $vel j=2 
               solve dytime $t1 
-              initial yvel $negvel j=2 
+              ini   yvel $negvel j=2 
               solve dytime $t2 
-              initial yvel $vel j=2 
+              ini   yvel $vel j=2 
               solve dytime $t3 
-             end_command 
+             endcommand 
            endloop 
         endif 
   endloop 
@@ -454,6 +460,8 @@ def $five_files
   loop $n (1,5) 
         $file = $basefile + '_' + string($n) + '.txt' 
         status = open($file,1,1) 
+        
+        $1st_row = 3     ;1st row with data for cyclic loading
         $tab1  = 3*$n-2 
         $tab2  = 3*$n-1 
         $tab3  = 3*$n 
@@ -461,7 +469,7 @@ def $five_files
         if status = 0 
             status = write($data,1) 
         endif 
-        loop $i (1,$size) 
+        loop $i ($1st_row,$size) 
             $data(1,1) =              string(xtable($tab1,$i))  +'  ' 
             $data(1,1) = $data(1,1) + string(ytable($tab1,$i))  +'  ' 
             $data(1,1) = $data(1,1) + string(xtable($tab2,$i))  +'  ' 

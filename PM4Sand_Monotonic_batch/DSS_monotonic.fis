@@ -354,7 +354,10 @@ def $strain_control
 	  $vel    = $max_strain * $thick * $freq * 4.0 
 	  $tfinal = $max_strain / $vel
     command 
-		  initial  xvel    $vel    j=2
+		  ; First run enough steps to get the zero point
+      step 100 ; Should be at least twice $his_steps which was defined earlier
+    
+      initial  xvel    $vel    j=2
 	 	  solve    dytime  $tfinal 		
     endcommand 
 end 
@@ -374,6 +377,8 @@ def $five_files
   loop $n (1,5) 
        $file = $basefile + '_' + string($n) + '.txt' 
        status = open($file,1,1) 
+       
+       $1st_row = 3     ;1st row with data for cyclic loading
        $tab1  = 3*$n-2 
        $tab2  = 3*$n-1 
        $tab3  = 3*$n 
@@ -381,7 +386,7 @@ def $five_files
        if status = 0 
            status = write($data,1) 
        endif 
-       loop $i (1,$size) 
+       loop $i ($1st_row,$size) 
            $data(1,1) =              string(xtable($tab1,$i))  +'  ' 
            $data(1,1) = $data(1,1) + string(ytable($tab1,$i))  +'  ' 
            $data(1,1) = $data(1,1) + string(xtable($tab2,$i))  +'  ' 
