@@ -91,7 +91,7 @@ def $input_variables
 	   $Strain_stop(5) = 0.08
 
 	$PostShake    = 1						   ; 1 for executing Post_Shake = 1 at end of cyclic loading
-	$dydt         = 0.0                        ; Option for manual dydt input, if zero gets default value
+	$dydt         = 0.0            ; Option for manual dydt input, if zero gets default value
 end
 $input_variables
 ;========================================================================================================;
@@ -111,9 +111,9 @@ def $calc_variables
     $CSR_limit(4) = $CSRmid
     $CSR_limit(5) = $CSRmid
 	
-    $his_steps    = 50          	     ; Number of solutions steps to every store history value 
+    $his_steps    = 20          	     ; Number of solutions steps to every store history value 
     $freq         = 1.0                ; Frequency for Rayleigh damping
-	$damp           = 0.01               ; Damping for Rayleigh damping
+	  $damp         = 0.01               ; Damping for Rayleigh damping
 end 
 $calc_variables 
 
@@ -472,6 +472,15 @@ $his_terms
 ;========================================================================================================;
 set steps 50000000 
 def $solve 
+    ; Running enough steps to get the zero point
+    command
+        step 40 ; Should be at least twice $his_steps which was defined earlier
+    endcommand
+    ; Initialize loading of the top cap
+    command
+        initial  xvel = $rate  j=2  
+    endcommand
+
     loop $nt (1,1000) 
          $time =dytime + 0.1 
          $biggestStrain  = min($emax(1),$emax(2)) 
@@ -528,11 +537,13 @@ $CSR_N
 ;-------------------------------------------------------------------------------------------------------;
 def $N_gama
 loop $k (1,5) 
-	$tab1 = 3*$k-2 
+  $1st_row = 3            ;1st row with data for cyclic loading
+	
+  $tab1 = 3*$k-2 
 	$tab2 = $k + 29			;temporary tables 
 	$tab3 = $k + 39			;temporary tables 
 	$size = table_size($tab1) 
-	loop $i (1,$size) 
+	loop $i ($1st_row,$size) 
 		$numcyc          = xtable($tab1,$i) 
 		xtable($tab2,$i) = $i 
 		ytable($tab2,$i) = $numcyc 
@@ -559,7 +570,7 @@ loop $k (1,5)
 	$halfcyc = 0 
 	$size2   = table_size($tab3)-1 
 	$ncycf   = 0 
-		loop $i (1,$size) 
+		loop $i ($1st_row,$size) 
 			loop $j (1,$size2) 
 			$x0 = xtable($tab3,$j) 
 			$x1 = xtable($tab3,$j+1) 
@@ -586,6 +597,8 @@ $N_gama
 ; each one of the 5 elements in 5 columns: number of cycles, CSR, shear strain (%), sigv/sigvo and ru   ;
 ;-------------------------------------------------------------------------------------------------------;
 def $five_files 
+  $1st_row = 3  ; 1st row with data for cyclic loading
+  
   $size = table_size(1) 
   loop $n (1,5) 
         $file  = $basefile + '_' + string($n) + '.txt' 
@@ -597,7 +610,7 @@ def $five_files
         if status = 0 
             status = write($data,1) 
         endif 
-        loop $i (1,$size) 
+        loop $i ($1st_row,$size) 
             $data(1,1) =              string(xtable($tab1,$i))  +'  ' 
             $data(1,1) = $data(1,1) + string(ytable($tab1,$i))  +'  ' 
             $data(1,1) = $data(1,1) + string(xtable($tab2,$i))  +'  ' 
