@@ -378,6 +378,11 @@ $his_terms
 ;========================================================================================================;
 def $strain_control 
   $t3 = 0.0
+  ; First run enough steps to get the zero point
+  command
+    step 100 ; Should be at least twice $his_steps which was defined earlier
+  endcommand
+
   loop $limits (1,$strain_count) 
 		   $rate = $Strain_limit($limits) * $freq * 4.0
        if $rate > $maxRate
@@ -439,6 +444,8 @@ def $five_files
   loop $n (1,5) 
        $file  = $basefile + '_' + string($n) + '.txt' 
        status = open($file,1,1) 
+       
+       $1st_row = 3     ;1st row with data for cyclic loading
        $tab1  = 3*$n-2 
        $tab2  = 3*$n-1 
        $tab3  = 3*$n 
@@ -446,7 +453,7 @@ def $five_files
        if status  = 0 
            status = write($data,1) 
        end_if 
-       loop $i (1,$size) 
+       loop $i ($1st_row,$size) 
            $data(1,1) =              string(xtable($tab1,$i))  +'  ' 
            $data(1,1) = $data(1,1) + string(ytable($tab1,$i))  +'  ' 
            $data(1,1) = $data(1,1) + string(xtable($tab2,$i))  +'  ' 
