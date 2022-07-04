@@ -108,16 +108,10 @@ for fileind, filelist in enumerate(filelist_ar):
         alpha = extra[1][1:]
         Ko    = extra[2][2:]
         
-        #---- TEMPORARY FIX TO STRESS PATHS IN DRIVERS NOT STARTING AT 1 ------
-        # df = pd.read_table(file, header = 0, 
-        #             usecols = ['shear_strain', 'CSR', 'sigv/sigvo'],
-        #             delim_whitespace=True, skiprows=lambda x: x > 3 and x % skip)
-        
         df = pd.read_table(file, header = 0, 
-                    usecols = ['shear_strain', 'CSR', 'sigv/sigvo'],
-                    delim_whitespace=True, skiprows=range(1, 3))
-        #----------------------------------------------------------------------
-
+                     usecols = ['shear_strain', 'CSR', 'sigv/sigvc'],
+                     delim_whitespace=True, skiprows=lambda x: x > 3 and x % skip)
+    
         axs_row = alpha_dict[alpha]
         
         df.plot(ax=axs[axs_row,0], x = 'shear_strain', y = 'CSR',
@@ -126,7 +120,7 @@ for fileind, filelist in enumerate(filelist_ar):
                 alpha = 1,
                 legend = False)
     
-        df.plot(ax=axs[axs_row,1], x = 'sigv/sigvo', y = 'CSR', 
+        df.plot(ax=axs[axs_row,1], x = 'sigv/sigvc', y = 'CSR', 
                 xlim = (0,1), color = "black",
                 linewidth = 1, 
                 alpha = 1,
