@@ -483,11 +483,11 @@ def $mod_damp_out
         loop $cyc (1,$Ncycles) 
 			$iii   = ($limits-1)*$Ncycles + $cyc
 			$strainPercent = $Strain_limit($limits) * 100
-			$data(1,1)   =    string($strainPercent)+ '  '
+			$data(1,1)   =    fstring($strainPercent,3)+ '  '
 			loop $n (1,5)
-				$data(1,1) = $data(1,1) + string($GSecant($iii,$n))   + '  '  
-				$data(1,1) = $data(1,1) + string($G_Gmax($iii,$n))    + '  '  
-				$data(1,1) = $data(1,1) + string($dampRatio($iii,$n)) + '  '  
+				$data(1,1) = $data(1,1) + fstring($GSecant($iii,$n),3)   + '  '  
+				$data(1,1) = $data(1,1) + fstring($G_Gmax($iii,$n),3)    + '  '  
+				$data(1,1) = $data(1,1) + fstring($dampRatio($iii,$n),3) + '  '  
 			endloop
 			if status = 0 
 				status = write($data,1) 
