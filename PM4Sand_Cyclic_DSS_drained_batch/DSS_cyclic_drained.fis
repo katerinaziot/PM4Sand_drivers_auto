@@ -144,7 +144,7 @@ def $asssign_secondary ; Assign the secondary parameters - separated just for il
 				          z_max  = $zmax   c_e   = $ce     c_z      = $cz       &
 				          phi_cv = $phicv  pois  = $pois   G_degr   = $Gdegr    &
 				          C_DR   = $CDR    C_kaf = $Ckaf   Q_bolt   = $Q        &
-				          R_bolt = $R      m_par = $m      F_sedmin = $Fsed     & 
+				          R_bolt = $R      m_par = $m      F_sed    = $Fsed     & 
 				          p_sedo = $psedo  i=$i j=$j	  
             endcommand
         endloop
@@ -483,11 +483,11 @@ def $mod_damp_out
         loop $cyc (1,$Ncycles) 
 			$iii   = ($limits-1)*$Ncycles + $cyc
 			$strainPercent = $Strain_limit($limits) * 100
-			$data(1,1)   =    string($strainPercent)+ '  '
+			$data(1,1)   =    fstring($strainPercent,3)+ '  '
 			loop $n (1,5)
-				$data(1,1) = $data(1,1) + string($GSecant($iii,$n))   + '  '  
-				$data(1,1) = $data(1,1) + string($G_Gmax($iii,$n))    + '  '  
-				$data(1,1) = $data(1,1) + string($dampRatio($iii,$n)) + '  '  
+				$data(1,1) = $data(1,1) + fstring($GSecant($iii,$n),3)   + '  '  
+				$data(1,1) = $data(1,1) + fstring($G_Gmax($iii,$n),3)    + '  '  
+				$data(1,1) = $data(1,1) + fstring($dampRatio($iii,$n),3) + '  '  
 			endloop
 			if status = 0 
 				status = write($data,1) 
